@@ -30,8 +30,8 @@
 
         // Load Face-api.js models
         async function loadModels() {
-            await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
-            await faceapi.nets.faceExpressionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+            await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/models');
+            await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/models');
             console.log("Models Loaded!");
         }
 
@@ -47,6 +47,11 @@
 
         // Predict emotion
         async function predictEmotion() {
+            if (!faceapi.nets.faceExpressionNet.params) {
+                resultText.innerText = "Models are still loading...";
+                return;
+            }
+
             const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
             
             if (detections.length > 0) {
@@ -60,8 +65,8 @@
 
         captureButton.addEventListener('click', predictEmotion);
 
-        loadModels();
-        startWebcam();
+        // Wait for models to load before starting
+        loadModels().then(startWebcam);
     </script>
 
 </body>
