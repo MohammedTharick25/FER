@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facial Emotion Recognition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script> 
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
         #video { width: 400px; border: 2px solid black; }
@@ -44,6 +46,30 @@
                 console.error("Error accessing webcam:", err);
             });
 
+        // Load MobileNet model for prediction
+        let model;
+        async function loadModel() {
+            model = await mobilenet.load();
+            console.log("Model Loaded!");
+        }
+        loadModel();
+
+        // Predict emotion from image data
+        async function predictEmotion(imageData) {
+            if (!model) {
+                resultText.innerText = "Model not loaded yet!";
+                return;
+            }
+
+            const img = new Image();
+            img.src = imageData;
+            img.onload = async () => {
+                const tensor = tf.browser.fromPixels(img).expandDims(0).toFloat();
+                const predictions = await model.classify(tensor);
+                resultText.innerText = "Emotion: " + predictions[0].className;
+            };
+        }
+
         // Upload image and predict
         uploadButton.addEventListener('click', function() {
             const file = fileInput.files[0];
@@ -51,19 +77,11 @@
                 alert("Please select an image first!");
                 return;
             }
-
-            const formData = new FormData();
-            formData.append("file", file);
-
-            fetch("https://api.example.com/upload", {
-                method: "POST",
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                resultText.innerText = "Emotion: " + data.emotion;
-            })
-            .catch(error => console.error("Error:", error));
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                predictEmotion(event.target.result);
+            };
+            reader.readAsDataURL(file);
         });
 
         // Capture from webcam and predict
@@ -71,19 +89,8 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
             const imageData = canvas.toDataURL("image/jpeg");
-
-            fetch("https://mohammedtharick25.github.io/FER/predict", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ image: imageData })
-            })
-            .then(response => response.text())  // First get raw text
-            .then(text => {
-            console.log("Raw response:", text);
-                return JSON.parse(text);  // Try to parse JSON
-            .catch(error => console.error("Error:", error));
+            predictEmotion(imageData);
         });
     </script>
 
