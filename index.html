@@ -80,10 +80,9 @@
                 body: JSON.stringify({ image: imageData })
             })
             .then(response => response.text())  // First get raw text
+            .then(text => {
+            console.log("Raw response:", text);
                 return JSON.parse(text);  // Try to parse JSON
-            .then(data => {
-                resultText.innerText = "Emotion: " + data.emotion;
-            })
             .catch(error => console.error("Error:", error));
         });
     </script>
