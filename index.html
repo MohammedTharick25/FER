@@ -4,94 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facial Emotion Recognition</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script> 
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
         #video { width: 400px; border: 2px solid black; }
-        #captureButton, #uploadButton { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 10px; }
+        #captureButton { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 10px; }
         h2 { margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <h1>Facial Emotion Recognition</h1>
-
-    <h2>Upload an Image</h2>
-    <input type="file" id="fileInput">
-    <button id="uploadButton">Upload & Predict</button>
-
-    <h2>Or Use Your Webcam</h2>
+    
+    <h2>Use Your Webcam</h2>
     <video id="video" autoplay></video>
     <br>
     <button id="captureButton">Capture & Predict</button>
     <h2 id="result">Emotion: -</h2>
-    <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
         const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
         const captureButton = document.getElementById('captureButton');
         const resultText = document.getElementById('result');
-        const fileInput = document.getElementById('fileInput');
-        const uploadButton = document.getElementById('uploadButton');
 
-        // Start the webcam stream
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
+        // Load Face-api.js models
+        async function loadModels() {
+            await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+            await faceapi.nets.faceExpressionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+            console.log("Models Loaded!");
+        }
+
+        // Start webcam
+        async function startWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
-            })
-            .catch(err => {
-                console.error("Error accessing webcam:", err);
-            });
-
-        // Load MobileNet model for prediction
-        let model;
-        async function loadModel() {
-            model = await mobilenet.load();
-            console.log("Model Loaded!");
-        }
-        loadModel();
-
-        // Predict emotion from image data
-        async function predictEmotion(imageData) {
-            if (!model) {
-                resultText.innerText = "Model not loaded yet!";
-                return;
+            } catch (error) {
+                console.error("Error accessing webcam:", error);
             }
-
-            const img = new Image();
-            img.src = imageData;
-            img.onload = async () => {
-                const tensor = tf.browser.fromPixels(img).expandDims(0).toFloat();
-                const predictions = await model.classify(tensor);
-                resultText.innerText = "Emotion: " + predictions[0].className;
-            };
         }
 
-        // Upload image and predict
-        uploadButton.addEventListener('click', function() {
-            const file = fileInput.files[0];
-            if (!file) {
-                alert("Please select an image first!");
-                return;
+        // Predict emotion
+        async function predictEmotion() {
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+            
+            if (detections.length > 0) {
+                const emotions = detections[0].expressions;
+                const highestEmotion = Object.keys(emotions).reduce((a, b) => emotions[a] > emotions[b] ? a : b);
+                resultText.innerText = `Emotion: ${highestEmotion}`;
+            } else {
+                resultText.innerText = "No face detected!";
             }
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                predictEmotion(event.target.result);
-            };
-            reader.readAsDataURL(file);
-        });
+        }
 
-        // Capture from webcam and predict
-        captureButton.addEventListener('click', function() {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL("image/jpeg");
-            predictEmotion(imageData);
-        });
+        captureButton.addEventListener('click', predictEmotion);
+
+        loadModels();
+        startWebcam();
     </script>
 
 </body>
