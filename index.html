@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Emotion Recognition</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
+        #video { width: 400px; border: 2px solid black; }
+        #captureButton, #uploadButton { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 10px; }
+        h2 { margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Facial Emotion Recognition</h1>
+
+    <h2>Upload an Image</h2>
+    <input type="file" id="fileInput">
+    <button id="uploadButton">Upload & Predict</button>
+
+    <h2>Or Use Your Webcam</h2>
+    <video id="video" autoplay></video>
+    <br>
+    <button id="captureButton">Capture & Predict</button>
+    <h2 id="result">Emotion: -</h2>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const captureButton = document.getElementById('captureButton');
+        const resultText = document.getElementById('result');
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+
+        // Start the webcam stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error("Error accessing webcam:", err);
+            });
+
+        // Upload image and predict
+        uploadButton.addEventListener('click', function() {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Please select an image first!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            fetch("http://127.0.0.1:5000/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultText.innerText = "Emotion: " + data.emotion;
+            })
+            .catch(error => console.error("Error:", error));
+        });
+
+        // Capture from webcam and predict
+        captureButton.addEventListener('click', function() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = canvas.toDataURL("image/jpeg");
+
+            fetch("http://127.0.0.1:5000/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultText.innerText = "Emotion: " + data.emotion;
+            })
+            .catch(error => console.error("Error:", error));
+        });
+    </script>
+
+</body>
+</html>
