@@ -55,7 +55,7 @@
             const formData = new FormData();
             formData.append("file", file);
 
-            fetch("https://mohammedtharick25.github.io/FER/upload", {
+            fetch("https://api.example.com/upload", {
                 method: "POST",
                 body: formData
             })
@@ -79,7 +79,8 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ image: imageData })
             })
-            .then(response => response.json())
+            .then(response => response.text())  // First get raw text
+                return JSON.parse(text);  // Try to parse JSON
             .then(data => {
                 resultText.innerText = "Emotion: " + data.emotion;
             })
