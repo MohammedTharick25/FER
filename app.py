@@ -24,7 +24,7 @@ def home():
     return render_template('index.html')
 
 # Process uploaded images
-@app.route('/upload', methods=['POST'])
+@app.route('https://mohammedtharick25.github.io/FER/upload', methods=['POST'])
 def upload():
     file = request.files['file']
     image = Image.open(file).convert('RGB')
@@ -50,7 +50,7 @@ def upload():
     return jsonify({"emotion": "Error processing image"})
 
 # Process webcam images
-@app.route('/predict', methods=['POST'])
+@app.route('https://mohammedtharick25.github.io/FER/predict', methods=['POST'])
 def predict():
     data = request.json
     image_data = data['image']
